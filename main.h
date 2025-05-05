@@ -19,7 +19,13 @@ public:
 
 class main_window : public vsite::nwp::window {
 protected:
+	Gdiplus::Image* image = nullptr;
+	std::wstring file_name;
+	int GetClientHeight();
+	int GetClientWidth();
 	void on_paint(HDC hdc) override;
 	void on_command(int id) override;
 	void on_destroy() override;
+	bool on_erase_bkgnd(HDC dc) override;
+	void load_image(const std::wstring& path);
 };
