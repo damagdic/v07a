@@ -14,32 +14,29 @@ void main_window::on_paint(HDC hdc)
     Gdiplus::Graphics graphics(hdc);
 
     Gdiplus::SolidBrush whiteBrush(Color(255, 255, 255));
-    graphics.FillRectangle(&whiteBrush, 0, 0, GetClientWidth(), GetClientHeight());
+    int width = GetClientWidth();
+    int height = GetClientHeight();
+    graphics.FillRectangle(&whiteBrush, 0, 0, width, height);
 
-    if (image != nullptr) {
-        graphics.DrawImage(
-            image,
-            0, 0,
-            GetClientWidth(),
-            GetClientHeight()
-        );
+    if (image) {
+        graphics.DrawImage(image.get(), 0, 0, width, height);
 
         Gdiplus::Font font(L"Arial", 16);
-        Gdiplus::SolidBrush shadowBrush(Color(255, 255, 255, 255));
-        Gdiplus::SolidBrush textBrush(Color(255, 0, 0, 0));
+        Gdiplus::SolidBrush shadowBrush(Color(255, 0, 0, 0));
+        Gdiplus::SolidBrush textBrush(Color(255, 255, 255, 255));
 
-        Gdiplus::RectF layoutRect;
-        Gdiplus::PointF origin(0, 0);
-        graphics.MeasureString(file_name.c_str(), -1, &font, origin, &layoutRect);
+        Gdiplus::StringFormat format;
+        format.SetAlignment(Gdiplus::StringAlignmentCenter);
+        format.SetLineAlignment(Gdiplus::StringAlignmentFar);
 
-        float x = (GetClientWidth() - layoutRect.Width) / 2.0f;
-        float y = static_cast<float>(GetClientHeight() - layoutRect.Height - 10);
+        float x = width / 2.0f;
+        float y = static_cast<float>(height - 20);
 
         Gdiplus::PointF shadowPoint(x + 1, y + 1);
-        graphics.DrawString(file_name.c_str(), -1, &font, shadowPoint, &shadowBrush);
+        graphics.DrawString(file_name.c_str(), -1, &font, shadowPoint, &format, &shadowBrush);
 
         Gdiplus::PointF textPoint(x, y);
-        graphics.DrawString(file_name.c_str(), -1, &font, textPoint, &textBrush);
+        graphics.DrawString(file_name.c_str(), -1, &font, textPoint, &format, &textBrush);
     }
 }
 
@@ -58,16 +55,14 @@ void main_window::on_command(int id)
         ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 
         if (GetOpenFileName(&ofn)) {
-            delete image;
-            image = Image::FromFile(filename);
+            image = std::make_unique<Gdiplus::Image>(filename);
 
             if (image && image->GetLastStatus() == Ok) {
                 file_name = fs::path(filename).filename().wstring();
                 InvalidateRect(*this, nullptr, TRUE);
             }
             else {
-                delete image;
-                image = nullptr;
+                image.reset();
             }
         }
         break;
@@ -80,8 +75,7 @@ void main_window::on_command(int id)
 
 void main_window::on_destroy()
 {
-    delete image;
-    image = nullptr;
+    image.reset();
     ::PostQuitMessage(0);
 }
 
